@@ -1,0 +1,20 @@
+# Render Blueprint：在 Render 控制台选择 New -> Blueprint，连接本仓库后会自动按此文件创建免费 Web Service。
+services:
+  - type: web
+    name: ai-teaching-platform
+    runtime: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r junior-ai-lab/backend/requirements.txt
+    startCommand: bash start.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      # sync:false 表示该值不在仓库中，需在 Render 控制台手动填写（创建 Blueprint 时会要求输入）
+      - key: JWT_SECRET
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: COOKIE_SECURE
+        value: auto

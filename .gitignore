@@ -1,0 +1,17 @@
+# 运行时自动生成的目录与敏感文件：绝不提交
+__pycache__/
+*.pyc
+*.pyo
+logs/
+database/
+uploads/
+.env
+node_modules/
+*.zip
+*.rar
+
+# 本地测试/编辑器
+.venv/
+venv/
+.DS_Store
+Thumbs.db
