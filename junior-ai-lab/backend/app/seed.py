@@ -294,7 +294,10 @@ def seed_database(db: Session) -> None:
     db.flush()
 
     for mod in MODULES:
-        db.add(Module(**mod))
+        row = dict(mod)
+        # 生产环境用站内相对路径，开发环境用 localhost（routes 已在函数上方按环境选定）
+        row["route_path"] = routes[mod["module_key"]]
+        db.add(Module(**row))
     db.flush()
 
     students = db.query(User).filter(User.role == "student").all()
