@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 from app.database import Base, engine, SessionLocal, migrate_schema
-from app.routers import auth, dashboard, submissions, synthesize, management, courses
+from app.routers import auth, dashboard, submissions, synthesize, management, courses, recognition
 from app.routers.ai_evaluation import router as ai_evaluation_router
 from app.routers.analytics import router as analytics_router
 from app.routers.cnn import race, leaderboard, dataset, model_design, model_test, statistics, evaluation, materials
@@ -60,6 +60,7 @@ app.include_router(management.router)
 app.include_router(ai_evaluation_router)
 app.include_router(analytics_router)
 app.include_router(courses.router)
+app.include_router(recognition.router)
 
 app.include_router(race.router)
 app.include_router(leaderboard.router)

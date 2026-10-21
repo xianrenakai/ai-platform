@@ -16,5 +16,11 @@ services:
         sync: false
       - key: DEEPSEEK_API_KEY
         sync: false
+      - key: XFYUN_APP_ID
+        sync: false
+      - key: XFYUN_API_KEY
+        sync: false
+      - key: XFYUN_API_SECRET
+        sync: false
       - key: COOKIE_SECURE
         value: auto
