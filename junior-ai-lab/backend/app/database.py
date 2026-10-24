@@ -38,6 +38,8 @@ def migrate_schema() -> None:
         statements.append("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0")
     if "is_active" not in columns:
         statements.append("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1")
+    if "plain_password" not in columns:
+        statements.append("ALTER TABLE users ADD COLUMN plain_password VARCHAR(255)")
     if statements:
         with engine.begin() as connection:
             for statement in statements:

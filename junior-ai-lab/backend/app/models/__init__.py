@@ -14,6 +14,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    plain_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(16), default="student")
     class_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)

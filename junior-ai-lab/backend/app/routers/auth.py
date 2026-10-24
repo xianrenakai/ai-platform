@@ -149,6 +149,7 @@ def change_password(
     if body.current_password == body.new_password:
         raise HTTPException(status_code=400, detail="新密码不能与当前密码相同")
     current_user.password_hash = hash_password(body.new_password)
+    current_user.plain_password = body.new_password
     current_user.must_change_password = False
     db.commit()
     return {"ok": True}

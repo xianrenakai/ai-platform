@@ -114,6 +114,7 @@ def user_out(user: User) -> dict:
         "class_name": user.class_name,
         "is_active": user.is_active,
         "must_change_password": user.must_change_password,
+        "plain_password": user.plain_password or "",
     }
 
 
@@ -180,8 +181,9 @@ async def import_students(
     for student_id, display_name, class_name, password in pending:
         db.add(User(
             username=student_id, display_name=display_name,
-            password_hash=hash_password(password), role="student",
-            class_name=class_name, must_change_password=True, is_active=True,
+            password_hash=hash_password(password), plain_password=password,
+            role="student",
+            class_name=class_name, must_change_password=False, is_active=True,
         ))
     db.commit()
     return {"imported": len(pending), "errors": []}
@@ -242,9 +244,10 @@ def create_user(
         username=username,
         display_name=display_name,
         password_hash=hash_password(body.password),
+        plain_password=body.password,
         role=body.role,
         class_name=target_class,
-        must_change_password=True,
+        must_change_password=False,
         is_active=True,
     )
     db.add(user)
@@ -276,7 +279,8 @@ def update_user(
         user.display_name = body.display_name.strip()
     if body.password:
         user.password_hash = hash_password(body.password)
-        user.must_change_password = True
+        user.plain_password = body.password
+        user.must_change_password = False
     if body.role:
         user.role = body.role
     if body.class_name is not None:

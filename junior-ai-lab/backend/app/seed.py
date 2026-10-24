@@ -268,8 +268,9 @@ def seed_database(db: Session) -> None:
     if not existing_admin:
         db.add(User(
             username="admin", display_name="管理员",
-            password_hash=hash_password("admin123"), role="admin",
-            class_name=None, must_change_password=True, is_active=True,
+            password_hash=hash_password("admin123"), plain_password="admin123",
+            role="admin",
+            class_name=None, must_change_password=False, is_active=True,
         ))
         db.commit()
 
@@ -284,13 +285,16 @@ def seed_database(db: Session) -> None:
         return
 
     for name, password, class_name in TEACHERS:
-        db.add(User(username=name, display_name=name, password_hash=hash_password(password),
+        db.add(User(username=name, display_name=name,
+                    password_hash=hash_password(password), plain_password=password,
                     role="teacher", class_name=class_name))
     for name in STUDENTS_CLASS1:
-        db.add(User(username=name, display_name=name, password_hash=hash_password("123456"),
+        db.add(User(username=name, display_name=name,
+                    password_hash=hash_password("123456"), plain_password="123456",
                     role="student", class_name="七年级1班"))
     for name in STUDENTS_CLASS2:
-        db.add(User(username=name, display_name=name, password_hash=hash_password("123456"),
+        db.add(User(username=name, display_name=name,
+                    password_hash=hash_password("123456"), plain_password="123456",
                     role="student", class_name="七年级2班"))
     db.flush()
 
