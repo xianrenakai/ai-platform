@@ -16,6 +16,12 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
 engine_kwargs = {}
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Postgres (Neon) free tier drops idle connections; test before reuse.
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 180
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 5
 
 engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
