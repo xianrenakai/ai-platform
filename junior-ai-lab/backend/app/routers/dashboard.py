@@ -45,6 +45,7 @@ class StudentSummary(BaseModel):
     username: str
     class_name: Optional[str]
     modules: Dict[str, float]
+    plain_password: Optional[str] = None
 
 
 class DashboardResponse(BaseModel):
@@ -168,6 +169,7 @@ def list_modules(db: Session = Depends(get_db)):
 @router.get("/dashboard", response_model=DashboardResponse)
 def get_dashboard(
     class_name: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -179,21 +181,68 @@ def get_dashboard(
             q = q.filter(User.class_name == current_user.class_name)
         if class_name:
             q = q.filter(User.class_name == class_name)
+        if keyword:
+            like = f"%{keyword}%"
+            q = q.filter(
+                (User.display_name.ilike(like)) | (User.username.ilike(like))
+            )
         students = q.all()
+        student_ids = [s.id for s in students]
+
+        # Bulk fetch all submissions for these students (recognition + synthesis)
+        subs = []
+        if student_ids:
+            subs = (
+                db.query(Submission)
+                .filter(Submission.user_id.in_(student_ids))
+                .order_by(Submission.user_id, Submission.module, Submission.activity_id, Submission.created_at.desc())
+                .all()
+            )
+        # Group: latest[user_id][module][activity_id] = submission
+        latest: Dict[int, Dict[str, Dict[str, Submission]]] = {}
+        for s in subs:
+            latest.setdefault(s.user_id, {}).setdefault(s.module, {})
+            if s.activity_id not in latest[s.user_id][s.module]:
+                latest[s.user_id][s.module][s.activity_id] = s
+
+        # Bulk fetch CNN records
+        cnn_race, cnn_dataset, cnn_design, cnn_upload = {}, {}, {}, {}
+        if student_ids:
+            for row in db.query(CnnRaceRecord).filter(CnnRaceRecord.user_id.in_(student_ids)).all():
+                cur = cnn_race.get(row.user_id)
+                if cur is None or row.accuracy > cur.accuracy:
+                    cnn_race[row.user_id] = row
+            for row in db.query(CnnDatasetRecord).filter(CnnDatasetRecord.user_id.in_(student_ids)).order_by(CnnDatasetRecord.created_at.desc()).all():
+                cnn_dataset.setdefault(row.user_id, row)
+            for row in db.query(CnnModelDesignRecord).filter(CnnModelDesignRecord.user_id.in_(student_ids)).order_by(CnnModelDesignRecord.created_at.desc()).all():
+                cnn_design.setdefault(row.user_id, row)
+            for row in db.query(CnnModelUploadRecord).filter(CnnModelUploadRecord.user_id.in_(student_ids)).all():
+                cur = cnn_upload.get(row.user_id)
+                if cur is None or (row.final_val_accuracy or 0) > (cur.final_val_accuracy or 0):
+                    cnn_upload[row.user_id] = row
+
         students_summary: Optional[List[StudentSummary]] = []
         for stu in students:
-            rec = _latest_scores(db, stu.id, "recognition")
-            syn = _latest_scores(db, stu.id, "synthesis")
-            cnn = _cnn_scores(db, stu.id)
-            rec_avg = (
-                sum(_to_percent("recognition", act, s.score) for act, s in rec.items()) / len(rec)
-                if rec else 0
-            )
-            syn_avg = (
-                sum(_to_percent("synthesis", act, s.score) for act, s in syn.items()) / len(syn)
-                if syn else 0
-            )
-            cnn_avg = sum(cnn.values()) / 4
+            rec = latest.get(stu.id, {}).get("recognition", {})
+            syn = latest.get(stu.id, {}).get("synthesis", {})
+            race = cnn_race.get(stu.id)
+            dataset = cnn_dataset.get(stu.id)
+            design = cnn_design.get(stu.id)
+            upload = cnn_upload.get(stu.id)
+
+            race_score = round(min((race.accuracy if race else 0), 100), 1)
+            class_count = (dataset.class_count if dataset else 0) or 0
+            dataset_score = round(
+                (30 if class_count >= 10 else 22 if class_count >= 5 else 15 if dataset else 0) / 30 * 100, 1)
+            conv_layers = (design.conv_layers if design else 0) or 0
+            design_score = round(
+                (30 if conv_layers >= 4 else 22 if conv_layers >= 2 else 15 if design else 0) / 30 * 100, 1)
+            test_score = round(min((upload.final_val_accuracy or 0) * 100 if upload else 0, 100), 1)
+
+            rec_avg = sum(_to_percent("recognition", act, s.score) for act, s in rec.values()) / len(rec) if rec else 0
+            syn_avg = sum(_to_percent("synthesis", act, s.score) for act, s in syn.values()) / len(syn) if syn else 0
+            cnn_avg = (race_score + dataset_score + design_score + test_score) / 4
+
             students_summary.append(StudentSummary(
                 user_id=stu.id,
                 username=stu.display_name or stu.username,
@@ -203,6 +252,7 @@ def get_dashboard(
                     "synthesis": round(syn_avg, 1),
                     "cnn": round(cnn_avg, 1),
                 },
+                plain_password=stu.plain_password if current_user.role == "admin" else None,
             ))
     else:
         students_summary = None

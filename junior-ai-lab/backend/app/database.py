@@ -52,6 +52,21 @@ def migrate_schema() -> None:
                 connection.execute(text(statement))
             connection.execute(text("UPDATE users SET display_name = username WHERE display_name IS NULL"))
 
+    # Backfill plain_password for legacy seed users (NULL before this column existed).
+    with engine.begin() as connection:
+        connection.execute(text(
+            "UPDATE users SET plain_password = 'admin123' WHERE username = 'admin' AND plain_password IS NULL"
+        ))
+        connection.execute(text(
+            "UPDATE users SET plain_password = 'teacher123' WHERE role = 'teacher' AND plain_password IS NULL"
+        ))
+        connection.execute(text(
+            "UPDATE users SET plain_password = '123456' WHERE role = 'student' AND plain_password IS NULL"
+        ))
+        connection.execute(text(
+            "UPDATE users SET plain_password = '20261023' WHERE username = '潘唯一' AND plain_password IS NULL"
+        ))
+
 
 def get_db():
     db = SessionLocal()
