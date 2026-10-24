@@ -239,8 +239,8 @@ def get_dashboard(
                 (30 if conv_layers >= 4 else 22 if conv_layers >= 2 else 15 if design else 0) / 30 * 100, 1)
             test_score = round(min((upload.final_val_accuracy or 0) * 100 if upload else 0, 100), 1)
 
-            rec_avg = sum(_to_percent("recognition", act, s.score) for act, s in rec.values()) / len(rec) if rec else 0
-            syn_avg = sum(_to_percent("synthesis", act, s.score) for act, s in syn.values()) / len(syn) if syn else 0
+            rec_avg = sum(_to_percent("recognition", act, s.score) for act, s in rec.items()) / len(rec) if rec else 0
+            syn_avg = sum(_to_percent("synthesis", act, s.score) for act, s in syn.items()) / len(syn) if syn else 0
             cnn_avg = (race_score + dataset_score + design_score + test_score) / 4
 
             students_summary.append(StudentSummary(
