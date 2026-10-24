@@ -53,6 +53,7 @@ def migrate_schema() -> None:
             connection.execute(text("UPDATE users SET display_name = username WHERE display_name IS NULL"))
 
     # Backfill plain_password for legacy seed users (NULL before this column existed).
+    # Order matters: 潘唯一 is a teacher but has a custom password, so fix it AFTER the teacher default.
     with engine.begin() as connection:
         connection.execute(text(
             "UPDATE users SET plain_password = 'admin123' WHERE username = 'admin' AND plain_password IS NULL"
@@ -63,8 +64,9 @@ def migrate_schema() -> None:
         connection.execute(text(
             "UPDATE users SET plain_password = '123456' WHERE role = 'student' AND plain_password IS NULL"
         ))
+        # 潘唯一 has a custom password; always correct it (overrides teacher default).
         connection.execute(text(
-            "UPDATE users SET plain_password = '20261023' WHERE username = '潘唯一' AND plain_password IS NULL"
+            "UPDATE users SET plain_password = '20261023' WHERE username = '潘唯一'"
         ))
 
 
