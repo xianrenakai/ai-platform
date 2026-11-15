@@ -1,0 +1,1 @@
+async function e(){let e=await fetch(`/api/courses`,{credentials:`include`});if(!e.ok)throw Error(`课程加载失败`);return e.json()}function t(e,t=!1){return`/api/courses/resources/${e}${t?`?download=true`:``}`}export{t as n,e as t};
