@@ -36,6 +36,12 @@ def _require_staff(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+def _require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="仅管理员可以删除行为记录")
+    return current_user
+
+
 def _parse_detail(raw: str) -> dict[str, Any]:
     try:
         value = json.loads(raw or "{}")
@@ -194,3 +200,17 @@ def export_events(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=event-logs-{stamp}.xlsx"},
     )
+
+
+@router.delete("/{event_id}")
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(_require_admin),
+):
+    row = db.get(EventLog, event_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
