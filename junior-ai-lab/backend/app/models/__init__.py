@@ -60,3 +60,24 @@ class CourseEvaluation(Base):
     score: Mapped[float] = mapped_column(Float, default=0)
     comment: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class EventLog(Base):
+    """行为埋点事件：记录学生在各模块的操作过程（点击、播放、录音、停留、提交等）。"""
+
+    __tablename__ = "event_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    username: Mapped[str] = mapped_column(String(64), index=True)
+    class_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    module: Mapped[str] = mapped_column(String(32), index=True)
+    activity_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(48), index=True)
+    page: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    target: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    detail: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), index=True
+    )
