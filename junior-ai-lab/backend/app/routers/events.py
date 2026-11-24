@@ -172,6 +172,9 @@ def export_events(
     )
     rows = query.order_by(EventLog.created_at.asc()).limit(MAX_EXPORT_ROWS).all()
 
+    if not rows:
+        raise HTTPException(status_code=404, detail="没有内容，无法输出 Excel")
+
     header = ["时间", "用户ID", "用户名", "班级", "模块", "活动", "事件类型", "页面", "对象", "停留(ms)", "详情"]
     table: list[list[str]] = [header]
     for row in rows:
